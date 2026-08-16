@@ -35,7 +35,13 @@ let tfidfModel = null;
 
 function getExtractor() {
   if (!extractorPromise) {
-    extractorPromise = pipeline('feature-extraction', MODEL_NAME);
+    // dtype: 'q8' = versi model yang di-kompres jadi 8-bit (dari default
+    // 32-bit). Ukurannya di memori bisa turun signifikan — ini upaya buat
+    // muat di 512MB Render. Kalau model ini nggak punya varian q8 yang
+    // tersedia di Hugging Face, baris ini bakal ngasih error yang beda
+    // (bukan OOM lagi) — itu tandanya perlu coba dtype lain atau nyerah
+    // ke opsi lokal-doang.
+    extractorPromise = pipeline('feature-extraction', MODEL_NAME, { dtype: 'q8' });
   }
   return extractorPromise;
 }
