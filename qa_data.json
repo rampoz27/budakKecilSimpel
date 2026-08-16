@@ -1,0 +1,218 @@
+[
+  {
+    "question": "siapa nama kamu",
+    "answer": "Aku adalah AI Q&A sederhana buatanmu sendiri!"
+  },
+  {
+    "question": "apa itu python",
+    "answer": "Python adalah bahasa pemrograman yang mudah dibaca, sering dipakai buat data science dan AI."
+  },
+  {
+    "question": "apa itu javascript",
+    "answer": "JavaScript adalah bahasa pemrograman utama buat web, jalan di browser dan juga di server lewat Node.js."
+  },
+  {
+    "question": "beda python sama javascript apa",
+    "answer": "Python pakai indentasi buat blok kode dan nggak pakai titik koma, JavaScript pakai kurung kurawal {} dan titik koma. Konsep dasarnya mirip, cuma beda sintaks."
+  },
+  {
+    "question": "apa itu variabel",
+    "answer": "Variabel adalah tempat menyimpan nilai/data yang bisa dipakai dan diubah di dalam program."
+  },
+  {
+    "question": "apa itu function",
+    "answer": "Function adalah kumpulan kode yang bisa dipanggil berulang kali, biasanya menerima input (parameter) dan mengembalikan hasil (return)."
+  },
+  {
+    "question": "apa bedanya list dan tuple di python",
+    "answer": "List bisa diubah isinya (mutable) pakai kurung siku [], tuple nggak bisa diubah (immutable) pakai kurung biasa ()."
+  },
+  {
+    "question": "apa itu dictionary di python",
+    "answer": "Dictionary adalah struktur data pasangan key-value, diakses pakai kurung siku dan nama key dalam string, misal data['nama']."
+  },
+  {
+    "question": "apa itu list comprehension",
+    "answer": "List comprehension adalah cara ringkas bikin list baru dari list lain dalam satu baris, contoh: [x**2 for x in range(10)]."
+  },
+  {
+    "question": "apa itu loop",
+    "answer": "Loop adalah cara mengulang eksekusi kode beberapa kali, di Python biasanya pakai for atau while."
+  },
+  {
+    "question": "gimana cara install python",
+    "answer": "Download dari python.org, pilih versi terbaru, jalankan installer, centang 'Add to PATH' pas instalasi."
+  },
+  {
+    "question": "apa itu pip",
+    "answer": "Pip adalah package manager Python, dipakai buat install library lewat perintah seperti pip install nama-library."
+  },
+  {
+    "question": "apa itu virtual environment",
+    "answer": "Virtual environment adalah lingkungan Python terisolasi per proyek, biar library satu proyek nggak bentrok sama proyek lain."
+  },
+  {
+    "question": "apa itu machine learning",
+    "answer": "Machine learning adalah cara komputer 'belajar' pola dari data, tanpa diprogram aturan secara eksplisit satu-satu."
+  },
+  {
+    "question": "apa itu deep learning",
+    "answer": "Deep learning adalah cabang machine learning yang pakai neural network berlapis-lapis (banyak layer) buat mempelajari pola yang lebih kompleks."
+  },
+  {
+    "question": "apa itu neural network",
+    "answer": "Neural network adalah model AI yang terinspirasi dari cara kerja otak, tersusun dari lapisan-lapisan 'neuron' yang saling terhubung."
+  },
+  {
+    "question": "apa itu tfidf",
+    "answer": "TF-IDF adalah cara mengubah teks jadi angka, dengan menghitung seberapa penting sebuah kata dalam sebuah dokumen dibanding dokumen lain."
+  },
+  {
+    "question": "apa itu cosine similarity",
+    "answer": "Cosine similarity mengukur seberapa 'searah' dua vektor, hasilnya 0 (tidak mirip) sampai 1 (identik) — dipakai buat cari teks yang paling mirip."
+  },
+  {
+    "question": "apa itu fine tuning",
+    "answer": "Fine-tuning adalah proses melatih ulang model AI yang sudah ada, memakai data baru yang lebih spesifik, biar dia jago di tugas tertentu."
+  },
+  {
+    "question": "apa itu overfitting",
+    "answer": "Overfitting terjadi kalau model terlalu 'hafal' data latihan, sampai gagal menebak dengan baik untuk data baru yang belum pernah dilihat."
+  },
+  {
+    "question": "apa itu training data",
+    "answer": "Training data adalah kumpulan contoh (input dan jawaban yang benar) yang dipakai model buat belajar pola."
+  },
+  {
+    "question": "apa itu LoRA",
+    "answer": "LoRA (Low-Rank Adaptation) adalah teknik fine-tuning yang ringan, cuma melatih sebagian kecil parameter model, jadi bisa jalan di GPU consumer biasa."
+  },
+  {
+    "question": "apa itu embedding",
+    "answer": "Embedding adalah cara mengubah teks jadi vektor angka yang menangkap makna, bukan cuma kemiripan kata — lebih canggih dari TF-IDF."
+  },
+  {
+    "question": "apa itu prompt engineering",
+    "answer": "Prompt engineering adalah teknik menyusun instruksi ke AI supaya hasil jawabannya lebih sesuai yang diinginkan."
+  },
+  {
+    "question": "apa itu RAG",
+    "answer": "RAG (Retrieval-Augmented Generation) adalah teknik mencari informasi relevan dari database dulu, baru dikasih ke AI sebagai konteks sebelum dia jawab."
+  },
+  {
+    "question": "berapa harga GPU buat AI",
+    "answer": "Tergantung modelnya — GPU consumer seperti RTX 4060 Ti (16GB) atau RTX 3090 bekas jadi pilihan populer buat self-hosted AI."
+  },
+  {
+    "question": "apa bedanya CPU dan GPU buat AI",
+    "answer": "GPU punya ribuan core kecil yang bisa kerja paralel, cocok buat hitungan matriks besar di AI. CPU lebih general-purpose tapi lebih lambat buat tugas itu."
+  },
+  {
+    "question": "apa itu git",
+    "answer": "Git adalah sistem version control, mencatat riwayat perubahan kode supaya bisa dilacak dan dikembalikan kalau perlu."
+  },
+  {
+    "question": "apa itu github",
+    "answer": "GitHub adalah platform hosting online buat repository Git, tempat nyimpen dan berbagi kode secara kolaboratif."
+  },
+  {
+    "question": "apa itu git clone",
+    "answer": "git clone adalah perintah buat menyalin (download) sebuah repository dari GitHub ke komputer lokal."
+  },
+  {
+    "question": "apa itu git commit",
+    "answer": "git commit adalah perintah buat menyimpan perubahan kode sebagai satu 'titik checkpoint' di riwayat Git, biasanya disertai pesan penjelasan."
+  },
+  {
+    "question": "apa itu git push",
+    "answer": "git push adalah perintah buat mengirim commit dari komputer lokal ke repository online seperti GitHub."
+  },
+  {
+    "question": "apa itu gitignore",
+    "answer": "File .gitignore berisi daftar file/folder yang sengaja tidak ikut disimpan ke Git, misal file hasil training atau folder environment."
+  },
+  {
+    "question": "apa itu branch di git",
+    "answer": "Branch adalah 'cabang' terpisah dari kode, biasa dipakai buat mengembangkan fitur baru tanpa mengganggu kode utama (main)."
+  },
+  {
+    "question": "apa itu API",
+    "answer": "API (Application Programming Interface) adalah cara dua program saling 'ngobrol' — biasanya lewat request dan response, misal format JSON lewat HTTP."
+  },
+  {
+    "question": "apa itu REST API",
+    "answer": "REST API adalah gaya desain API yang pakai method HTTP standar (GET, POST, PUT, DELETE) buat berbagai jenis operasi data."
+  },
+  {
+    "question": "apa itu JSON",
+    "answer": "JSON (JavaScript Object Notation) adalah format teks buat menyimpan/mengirim data terstruktur, gampang dibaca manusia dan komputer."
+  },
+  {
+    "question": "apa itu endpoint",
+    "answer": "Endpoint adalah alamat URL spesifik di sebuah API yang bisa dipanggil untuk melakukan aksi tertentu, misal /ask atau /health."
+  },
+  {
+    "question": "apa itu fastapi",
+    "answer": "FastAPI adalah framework Python buat bikin web API, dikenal cepat dan otomatis bikin dokumentasi interaktif di /docs."
+  },
+  {
+    "question": "apa itu uvicorn",
+    "answer": "Uvicorn adalah server yang menjalankan aplikasi FastAPI, dipanggil lewat perintah seperti uvicorn api:app."
+  },
+  {
+    "question": "apa itu CORS",
+    "answer": "CORS (Cross-Origin Resource Sharing) adalah aturan keamanan browser — API perlu izinkan CORS dulu supaya bisa dipanggil dari domain web lain."
+  },
+  {
+    "question": "apa itu HTTP status code 200",
+    "answer": "Status code 200 artinya request berhasil diproses tanpa masalah — 'OK'."
+  },
+  {
+    "question": "apa itu HTTP status code 404",
+    "answer": "Status code 404 artinya alamat/endpoint yang diminta tidak ditemukan di server."
+  },
+  {
+    "question": "apa itu HTTP status code 429",
+    "answer": "Status code 429 artinya 'Too Many Requests' — kamu kena rate limit, kebanyakan request dalam waktu singkat."
+  },
+  {
+    "question": "apa itu deploy",
+    "answer": "Deploy adalah proses memindahkan/menjalankan aplikasi dari komputer lokal ke server publik supaya bisa diakses dari internet."
+  },
+  {
+    "question": "apa itu render",
+    "answer": "Render adalah platform hosting yang bisa otomatis build dan jalanin aplikasi (Node.js, Python, dst) langsung dari repository GitHub."
+  },
+  {
+    "question": "apa itu environment variable",
+    "answer": "Environment variable adalah nilai konfigurasi (misal API key) yang disimpan terpisah dari kode, biar aman dan gampang diganti tanpa ubah kode."
+  },
+  {
+    "question": "kenapa perlu env buat api key",
+    "answer": "Supaya API key tidak ikut ter-commit ke Git dan bocor ke publik — env variable disimpan terpisah di server hosting, bukan di dalam kode."
+  },
+  {
+    "question": "apa itu websocket",
+    "answer": "WebSocket adalah protokol komunikasi 2 arah yang tetap terbuka, cocok buat data real-time seperti chat atau game multiplayer."
+  },
+  {
+    "question": "apa itu SSE atau server sent events",
+    "answer": "SSE adalah cara server mengirim data secara bertahap ke client lewat koneksi HTTP yang tetap terbuka, satu arah (server ke client saja)."
+  },
+  {
+    "question": "apa itu polling",
+    "answer": "Polling adalah cara ambil data terbaru dengan cara nanya berulang-ulang ke server tiap beberapa detik, beda dengan WebSocket/SSE yang datanya didorong otomatis oleh server."
+  },
+  {
+    "question": "apa itu database",
+    "answer": "Database adalah tempat penyimpanan data yang terstruktur, bisa diambil dan diubah lewat query."
+  },
+  {
+    "question": "apa itu supabase",
+    "answer": "Supabase adalah platform backend yang menyediakan database Postgres, autentikasi, dan API otomatis, sering dipakai sebagai alternatif Firebase."
+  },
+  {
+    "question": "apa itu RLS row level security",
+    "answer": "Row Level Security adalah aturan di database yang membatasi setiap user cuma bisa lihat/ubah data miliknya sendiri."
+  }
+]
