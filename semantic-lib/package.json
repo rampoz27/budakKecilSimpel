@@ -1,0 +1,17 @@
+{
+  "name": "semantic-matcher-lib",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Reusable semantic matching library with transformer embeddings",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./matcher": "./matcher.js",
+    "./embeddings": "./embeddings.js",
+    "./similarity": "./similarity.js",
+    "./tfidf": "./tfidf.js"
+  },
+  "dependencies": {
+    "@huggingface/transformers": "^4.0.0"
+  }
+}
