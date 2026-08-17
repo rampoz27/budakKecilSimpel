@@ -36,14 +36,14 @@ const TFIDF_WEIGHT = 0.2;
 // ada hal baru yang dipelajari nggak lama sebelumnya.
 const SUPABASE_REFRESH_MS = 5 * 60 * 1000; // 5 menit
 
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseServiceKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 const supabase =
   supabaseUrl && supabaseServiceKey ? createClient(supabaseUrl, supabaseServiceKey) : null;
 
 if (!supabase) {
   console.warn(
-    '⚠️  SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY belum di-set — cuma bakal pakai qa_data.json statis, hasil Auto-Learning nggak kepake.'
+    '⚠️  NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY belum di-set — cuma bakal pakai qa_data.json statis, hasil Auto-Learning nggak kepake.'
   );
 }
 
