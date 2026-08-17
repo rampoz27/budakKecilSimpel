@@ -1,13 +1,12 @@
 /**
  * server.js — Simple Q&A (versi JS ensemble), berdiri sendiri, TERPISAH
- * dari CodeMind. Ini yang bikin CodeMind aman — kalau model ini butuh
- * banyak RAM, itu cuma nge-crash SERVICE INI doang, nggak ikut nyeret
- * CodeMind.
+ * dari CodeMind.
  *
- * Sekarang juga narik data dari Supabase (tabel learned_knowledge) —
- * hasil dari fitur Auto-Learning — digabung sama qa_data.json statis,
- * biar hal-hal baru yang "dipelajari" beneran kepake buat jawab
- * pertanyaan, bukan cuma nyimpen doang tanpa pernah dibaca lagi.
+ * Cara cari jawaban sekarang 2 TAHAP (bukan digabung jadi 1 pencarian):
+ *   Tahap 1: cek dulu di data hasil Auto-Learning (Supabase) —
+ *            ini yang paling "personal", hasil belajar kamu sendiri
+ *   Tahap 2: kalau nggak ketemu yang cukup yakin di situ, BARU cek
+ *            ke 54 data statis bawaan (qa_data.json)
  *
  * Jalankan lokal:
  *   npm install
@@ -30,32 +29,34 @@ const MODEL_NAME = 'Xenova/paraphrase-multilingual-MiniLM-L12-v2';
 const CONFIDENCE_THRESHOLD = 0.4;
 const EMBEDDING_WEIGHT = 0.8;
 const TFIDF_WEIGHT = 0.2;
-
-// Berapa lama data dari Supabase di-cache sebelum ditarik ulang — biar
-// nggak nge-query Supabase di SETIAP request, tapi tetap "sadar" kalau
-// ada hal baru yang dipelajari nggak lama sebelumnya.
 const SUPABASE_REFRESH_MS = 5 * 60 * 1000; // 5 menit
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseServiceKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabase =
   supabaseUrl && supabaseServiceKey ? createClient(supabaseUrl, supabaseServiceKey) : null;
 
 if (!supabase) {
   console.warn(
-    '⚠️  NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY belum di-set — cuma bakal pakai qa_data.json statis, hasil Auto-Learning nggak kepake.'
+    '⚠️  SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY belum di-set — cuma bakal pakai qa_data.json statis, hasil Auto-Learning nggak kepake.'
   );
 }
 
 let extractorPromise = null;
-let tfidfModel = null;
 
-// Dataset gabungan yang beneran dipakai buat matching — combinedQuestions[i]
-// selaras index-nya sama combinedAnswers[i] dan combinedEmbeddings[i].
-let combinedQuestions = [];
-let combinedAnswers = [];
-let combinedEmbeddings = [];
+// ── TAHAP 1: data hasil belajar (Supabase) — direfresh berkala
+let learnedQuestions = [];
+let learnedAnswers = [];
+let learnedEmbeddings = [];
+let learnedTfidfModel = null;
 let lastSupabaseFetch = 0;
+
+// ── TAHAP 2: data statis (qa_data.json) — dihitung sekali, nggak pernah berubah
+let staticQuestions = staticQaData.map((p) => p.question);
+let staticAnswers = staticQaData.map((p) => p.answer);
+let staticEmbeddings = [];
+let staticTfidfModel = buildTfidfModel(staticQuestions);
+let staticReady = false;
 
 function getExtractor() {
   if (!extractorPromise) {
@@ -70,9 +71,6 @@ function dotProduct(a, b) {
   return sum;
 }
 
-// Tarik semua learned_knowledge dari Supabase — pgvector embedding-nya
-// UDAH kehitung pas disimpen (lewat endpoint /embed yang sama), jadi
-// nggak perlu dihitung ulang di sini, tinggal dipakai langsung.
 async function fetchLearnedKnowledge() {
   if (!supabase) return [];
   const { data, error } = await supabase
@@ -85,87 +83,112 @@ async function fetchLearnedKnowledge() {
   return (data ?? []).map((row) => ({
     question: row.question,
     answer: row.answer,
-    // Supabase balikin pgvector sebagai string "[0.1,0.2,...]" di
-    // beberapa versi client — parse dulu biar aman dua-duanya.
     embedding: Array.isArray(row.embedding) ? row.embedding : JSON.parse(row.embedding),
   }));
 }
 
-// Bangun ulang dataset gabungan (statis + Supabase) dan TF-IDF model-nya.
-// Dipanggil pas startup, dan otomatis diulang tiap SUPABASE_REFRESH_MS.
-async function refreshDataset() {
+async function refreshLearnedDataset() {
   const learned = await fetchLearnedKnowledge();
-
-  combinedQuestions = [...staticQaData.map((p) => p.question), ...learned.map((p) => p.question)];
-  combinedAnswers = [...staticQaData.map((p) => p.answer), ...learned.map((p) => p.answer)];
-
-  const extractor = await getExtractor();
-  const staticOutput = await extractor(
-    staticQaData.map((p) => p.question),
-    { pooling: 'mean', normalize: true }
-  );
-  const staticEmbeddings = staticOutput.tolist();
-
-  combinedEmbeddings = [...staticEmbeddings, ...learned.map((p) => p.embedding)];
-
-  // TF-IDF butuh SEMUA dokumen buat ngitung IDF yang bener, jadi harus
-  // dibangun ulang tiap kali dataset-nya berubah.
-  tfidfModel = buildTfidfModel(combinedQuestions);
-
+  learnedQuestions = learned.map((p) => p.question);
+  learnedAnswers = learned.map((p) => p.answer);
+  learnedEmbeddings = learned.map((p) => p.embedding);
+  learnedTfidfModel = learnedQuestions.length > 0 ? buildTfidfModel(learnedQuestions) : null;
   lastSupabaseFetch = Date.now();
-  console.log(
-    `📚 Dataset di-refresh: ${staticQaData.length} statis + ${learned.length} dari Supabase = ${combinedQuestions.length} total`
-  );
+  console.log(`📚 Data hasil belajar di-refresh: ${learnedQuestions.length} entri dari Supabase`);
 }
 
-async function ensureFreshDataset() {
+async function ensureStaticEmbeddings() {
+  if (staticReady) return;
+  const extractor = await getExtractor();
+  const output = await extractor(staticQuestions, { pooling: 'mean', normalize: true });
+  staticEmbeddings = output.tolist();
+  staticReady = true;
+}
+
+async function ensureFreshLearnedDataset() {
   if (Date.now() - lastSupabaseFetch > SUPABASE_REFRESH_MS) {
-    await refreshDataset();
+    await refreshLearnedDataset();
   }
 }
 
-async function matchQuestion(question) {
-  await ensureFreshDataset();
+// Cari kecocokan terbaik di 1 kumpulan data — dipakai buat tahap 1 dan
+// tahap 2 secara terpisah, masing-masing dengan TF-IDF model-nya sendiri.
+function findBestMatch(userEmbedding, userQuestion, tfidfModel, embeddings, questions, answers) {
+  if (questions.length === 0) return null;
 
-  const extractor = await getExtractor();
-  const output = await extractor([question], { pooling: 'mean', normalize: true });
-  const userEmbedding = output.tolist()[0];
-
-  const userTfidfVector = transformQuery(tfidfModel, question);
+  const userTfidfVector = transformQuery(tfidfModel, userQuestion);
 
   let bestIdx = 0;
   let bestCombined = -Infinity;
-  let bestEmbedding = 0;
-  let bestTfidf = 0;
+  let bestEmbeddingScore = 0;
+  let bestTfidfScore = 0;
 
-  for (let i = 0; i < combinedQuestions.length; i++) {
-    const embeddingScore = dotProduct(userEmbedding, combinedEmbeddings[i]);
+  for (let i = 0; i < questions.length; i++) {
+    const embeddingScore = dotProduct(userEmbedding, embeddings[i]);
     const tfidfScore = cosineSim(userTfidfVector, tfidfModel.documentVectors[i]);
     const combined = EMBEDDING_WEIGHT * embeddingScore + TFIDF_WEIGHT * tfidfScore;
     if (combined > bestCombined) {
       bestCombined = combined;
       bestIdx = i;
-      bestEmbedding = embeddingScore;
-      bestTfidf = tfidfScore;
+      bestEmbeddingScore = embeddingScore;
+      bestTfidfScore = tfidfScore;
     }
   }
 
-  if (bestCombined < CONFIDENCE_THRESHOLD) {
-    return {
-      answer: 'Maaf, aku belum pernah belajar soal itu.',
-      confidence: bestCombined,
-      matched_question: '',
-      embedding_score: bestEmbedding,
-      tfidf_score: bestTfidf,
-    };
+  return {
+    answer: answers[bestIdx],
+    confidence: bestCombined,
+    matched_question: questions[bestIdx],
+    embedding_score: bestEmbeddingScore,
+    tfidf_score: bestTfidfScore,
+  };
+}
+
+async function matchQuestion(question) {
+  await ensureFreshLearnedDataset();
+  await ensureStaticEmbeddings();
+
+  const extractor = await getExtractor();
+  const output = await extractor([question], { pooling: 'mean', normalize: true });
+  const userEmbedding = output.tolist()[0];
+
+  // TAHAP 1 — cek hasil belajar (Supabase) dulu
+  if (learnedTfidfModel) {
+    const learnedMatch = findBestMatch(
+      userEmbedding,
+      question,
+      learnedTfidfModel,
+      learnedEmbeddings,
+      learnedQuestions,
+      learnedAnswers
+    );
+    if (learnedMatch && learnedMatch.confidence >= CONFIDENCE_THRESHOLD) {
+      return { ...learnedMatch, source: 'learned' };
+    }
   }
 
+  // TAHAP 2 — nggak ketemu (atau nggak cukup yakin) di hasil belajar,
+  // coba cek ke data statis bawaan.
+  const staticMatch = findBestMatch(
+    userEmbedding,
+    question,
+    staticTfidfModel,
+    staticEmbeddings,
+    staticQuestions,
+    staticAnswers
+  );
+  if (staticMatch && staticMatch.confidence >= CONFIDENCE_THRESHOLD) {
+    return { ...staticMatch, source: 'static' };
+  }
+
+  // Nggak ketemu di dua-duanya.
   return {
-    answer: combinedAnswers[bestIdx],
-    confidence: bestCombined,
-    matched_question: combinedQuestions[bestIdx],
-    embedding_score: bestEmbedding,
-    tfidf_score: bestTfidf,
+    answer: 'Maaf, aku belum pernah belajar soal itu.',
+    confidence: staticMatch ? staticMatch.confidence : 0,
+    matched_question: '',
+    embedding_score: staticMatch ? staticMatch.embedding_score : 0,
+    tfidf_score: staticMatch ? staticMatch.tfidf_score : 0,
+    source: 'none',
   };
 }
 
@@ -174,7 +197,11 @@ app.use(cors());
 app.use(express.json());
 
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', totalKnowledge: combinedQuestions.length });
+  res.json({
+    status: 'ok',
+    staticEntries: staticQuestions.length,
+    learnedEntries: learnedQuestions.length,
+  });
 });
 
 app.post('/ask', async (req, res) => {
@@ -191,8 +218,6 @@ app.post('/ask', async (req, res) => {
   }
 });
 
-// Dipakai fitur Auto-Learning di CodeMind — ngasih balik embedding
-// mentah (array angka) buat teks yang dikasih.
 app.post('/embed', async (req, res) => {
   try {
     const { text } = req.body;
@@ -209,12 +234,10 @@ app.post('/embed', async (req, res) => {
   }
 });
 
-// Endpoint manual buat maksa refresh dataset SEKARANG (nggak nunggu 5
-// menit) — berguna abis selesai proses belajar baru.
 app.post('/refresh', async (req, res) => {
   try {
-    await refreshDataset();
-    res.json({ status: 'ok', totalKnowledge: combinedQuestions.length });
+    await refreshLearnedDataset();
+    res.json({ status: 'ok', learnedEntries: learnedQuestions.length });
   } catch (err) {
     console.error('[/refresh]', err);
     res.status(500).json({ error: err.message || 'Unknown error' });
@@ -225,7 +248,8 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, async () => {
   console.log(`✅ Simple Q&A JS API jalan di port ${PORT}`);
   try {
-    await refreshDataset();
+    await refreshLearnedDataset();
+    await ensureStaticEmbeddings();
   } catch (err) {
     console.error('Gagal load dataset awal:', err);
   }
