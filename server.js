@@ -137,6 +137,26 @@ app.post('/ask', async (req, res) => {
   }
 });
 
+// Dipakai fitur Auto-Learning di CodeMind — ngasih balik embedding
+// mentah (array angka) buat teks yang dikasih, biar CodeMind bisa
+// nyimpennya langsung ke Supabase (pgvector) tanpa perlu jalanin model
+// neural network sendiri di sisi CodeMind.
+app.post('/embed', async (req, res) => {
+  try {
+    const { text } = req.body;
+    if (!text) {
+      return res.status(400).json({ error: 'text is required' });
+    }
+    const extractor = await getExtractor();
+    const output = await extractor([text], { pooling: 'mean', normalize: true });
+    const embedding = output.tolist()[0];
+    res.json({ embedding });
+  } catch (err) {
+    console.error('[/embed]', err);
+    res.status(500).json({ error: err.message || 'Unknown error' });
+  }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`✅ Simple Q&A JS API jalan di port ${PORT}`);
