@@ -23,8 +23,12 @@ const qaData = JSON.parse(readFileSync(join(__dirname, 'qa_data.json'), 'utf-8')
 
 const MODEL_NAME = 'Xenova/paraphrase-multilingual-MiniLM-L12-v2';
 const CONFIDENCE_THRESHOLD = 0.4;
-const EMBEDDING_WEIGHT = 0.6;
-const TFIDF_WEIGHT = 0.4;
+// Bobot TF-IDF diturunin — dari kejadian nyata: kata langka (kayak
+// "cara") bisa dikasih skor TF-IDF tinggi walau maksud pertanyaannya
+// beda total, dan itu bisa "menang" ngelawan embedding yang sebenernya
+// lebih ngerti makna beneran. Embedding sekarang lebih dominan.
+const EMBEDDING_WEIGHT = 0.8;
+const TFIDF_WEIGHT = 0.2;
 
 const questions = qaData.map((p) => p.question);
 const answers = qaData.map((p) => p.answer);
