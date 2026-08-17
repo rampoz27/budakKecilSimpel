@@ -1,16 +1,6 @@
 /**
  * server.js — Simple Q&A (versi JS ensemble), berdiri sendiri, TERPISAH
  * dari CodeMind.
- *
- * Cara cari jawaban sekarang 2 TAHAP (bukan digabung jadi 1 pencarian):
- *   Tahap 1: cek dulu di data hasil Auto-Learning (Supabase) —
- *            ini yang paling "personal", hasil belajar kamu sendiri
- *   Tahap 2: kalau nggak ketemu yang cukup yakin di situ, BARU cek
- *            ke 54 data statis bawaan (qa_data.json)
- *
- * Jalankan lokal:
- *   npm install
- *   npm start
  */
 
 import express from 'express';
@@ -42,6 +32,13 @@ if (!supabase) {
   );
 }
 
+// ── HELPER: Cleansing Teks dari Tag <think> Qwen ───────────────────
+function cleanAnswerText(text) {
+  if (!text) return '';
+  // Menghapus tag <think>...</think> beserta isinya secara menyeluruh
+  return text.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+}
+
 let extractorPromise = null;
 
 // ── TAHAP 1: data hasil belajar (Supabase) — direfresh berkala
@@ -53,7 +50,7 @@ let lastSupabaseFetch = 0;
 
 // ── TAHAP 2: data statis (qa_data.json) — dihitung sekali, nggak pernah berubah
 let staticQuestions = staticQaData.map((p) => p.question);
-let staticAnswers = staticQaData.map((p) => p.answer);
+let staticAnswers = staticQaData.map((p) => cleanAnswerText(p.answer));
 let staticEmbeddings = [];
 let staticTfidfModel = buildTfidfModel(staticQuestions);
 let staticReady = false;
@@ -82,7 +79,8 @@ async function fetchLearnedKnowledge() {
   }
   return (data ?? []).map((row) => ({
     question: row.question,
-    answer: row.answer,
+    // Otomatis membersihkan tag <think> jika data di DB terlanjur kotor
+    answer: cleanAnswerText(row.answer),
     embedding: Array.isArray(row.embedding) ? row.embedding : JSON.parse(row.embedding),
   }));
 }
@@ -111,8 +109,6 @@ async function ensureFreshLearnedDataset() {
   }
 }
 
-// Cari kecocokan terbaik di 1 kumpulan data — dipakai buat tahap 1 dan
-// tahap 2 secara terpisah, masing-masing dengan TF-IDF model-nya sendiri.
 function findBestMatch(userEmbedding, userQuestion, tfidfModel, embeddings, questions, answers) {
   if (questions.length === 0) return null;
 
@@ -167,8 +163,7 @@ async function matchQuestion(question) {
     }
   }
 
-  // TAHAP 2 — nggak ketemu (atau nggak cukup yakin) di hasil belajar,
-  // coba cek ke data statis bawaan.
+  // TAHAP 2 — cek ke data statis bawaan
   const staticMatch = findBestMatch(
     userEmbedding,
     question,
@@ -181,7 +176,7 @@ async function matchQuestion(question) {
     return { ...staticMatch, source: 'static' };
   }
 
-  // Nggak ketemu di dua-duanya.
+  // Nggak ketemu di dua-duanya
   return {
     answer: 'Maaf, aku belum pernah belajar soal itu.',
     confidence: staticMatch ? staticMatch.confidence : 0,
@@ -214,6 +209,47 @@ app.post('/ask', async (req, res) => {
     res.json(result);
   } catch (err) {
     console.error('[/ask]', err);
+    res.status(500).json({ error: err.message || 'Unknown error' });
+  }
+});
+
+// Endpoint untuk menyimpan pasangan Q&A baru dari AI ke Supabase
+app.post('/learn', async (req, res) => {
+  try {
+    const { question, answer } = req.body;
+    if (!question || !answer) {
+      return res.status(400).json({ error: 'question and answer are required' });
+    }
+
+    if (!supabase) {
+      return res.status(500).json({ error: 'Supabase client is not configured' });
+    }
+
+    // 1. Bersihkan dulu jawaban dari tag <think>...</think>
+    const cleanedAnswer = cleanAnswerText(answer);
+
+    // 2. Generate embedding untuk pertanyaan
+    const extractor = await getExtractor();
+    const output = await extractor([question], { pooling: 'mean', normalize: true });
+    const embedding = output.tolist()[0];
+
+    // 3. Simpan jawaban yang sudah bersih ke Supabase
+    const { data, error } = await supabase.from('learned_knowledge').insert([
+      {
+        question: question,
+        answer: cleanedAnswer,
+        embedding: embedding,
+      },
+    ]);
+
+    if (error) throw error;
+
+    // 4. Refresh dataset memori lokal
+    await refreshLearnedDataset();
+
+    res.json({ status: 'ok', message: 'Data berhasil dibersihkan dan disimpan ke Supabase!' });
+  } catch (err) {
+    console.error('[/learn]', err);
     res.status(500).json({ error: err.message || 'Unknown error' });
   }
 });
